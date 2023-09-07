@@ -1,7 +1,7 @@
 use std::{io::stdout, time::Duration, collections::VecDeque};
-
-use crossterm::{terminal, cursor, execute, event::{self, KeyCode}, style::Stylize};
+use crossterm::{terminal, cursor, execute, event, style::Stylize};
 use anyhow::Result;
+use bevy::prelude::*;
 
 struct CleanUp;
 impl Drop for CleanUp {
@@ -27,6 +27,9 @@ fn number_to_char(i: u8) -> char {
     }
     (i+97) as char
 }
+
+#[derive(Component)]
+struct Id(usize);
 
 struct Rotor {
     matching: VecDeque<u8>,
@@ -67,7 +70,77 @@ impl Rotor {
     }
 }
 
-fn main() -> Result<()> {
+#[derive(Resource)]
+struct Rotors([Rotor; 3]);
+
+#[derive(Resource)]
+struct CharLitUp(Option<char>);
+
+fn main() {
+    let rotors = Rotor::default_rotors();
+    App::new()
+        .insert_resource(Rotors(rotors))
+        .insert_resource(CharLitUp(None))
+        .add_plugins(DefaultPlugins)
+        .add_systems(Update, (keyboard_input, light_up_char))
+        .run()
+}
+
+fn keyboard_input(keys: Res<Input<KeyCode>>, mut rotors: ResMut<Rotors>, mut lit_up: ResMut<CharLitUp>) {
+    for key in keys.get_just_pressed() {
+        let c = match key {
+            KeyCode::A => 'a',
+            KeyCode::B => 'b',
+            KeyCode::C => 'c',
+            KeyCode::D => 'd',
+            KeyCode::E => 'e',
+            KeyCode::F => 'f',
+            KeyCode::G => 'g',
+            KeyCode::H => 'h',
+            KeyCode::I => 'i',
+            KeyCode::J => 'j',
+            KeyCode::K => 'k',
+            KeyCode::L => 'l',
+            KeyCode::M => 'm',
+            KeyCode::N => 'n',
+            KeyCode::O => 'o',
+            KeyCode::P => 'p',
+            KeyCode::Q => 'q',
+            KeyCode::R => 'r',
+            KeyCode::S => 's',
+            KeyCode::T => 't',
+            KeyCode::U => 'u',
+            KeyCode::V => 'v',
+            KeyCode::W => 'w',
+            KeyCode::X => 'x',
+            KeyCode::Y => 'y',
+            KeyCode::Z => 'z',
+            _ => continue
+        };
+        if c.is_ascii_alphabetic() {
+            let rotors = &mut rotors.0;
+            let c = c.to_lowercase().next().unwrap();
+            let mut i = char_to_number(c);
+            for rotor in rotors.iter_mut() {
+                println!("{}", i);
+                i = rotor.get(i, false);
+            }
+            for rotor in rotors.iter_mut() {
+                println!("{}", i);
+                i = rotor.get(i, true);
+            }
+            lit_up.0 = Some(number_to_char(i));
+        }
+    }
+}
+
+fn light_up_char(lit_up: Res<CharLitUp>) {
+    if let Some(c) = lit_up.0 {
+        println!("{}", c);
+    }
+}
+
+fn main_old() -> Result<()> {
     let _clean_up = CleanUp;
     terminal::enable_raw_mode()?;
     execute!(stdout(), cursor::Hide)?;
@@ -83,7 +156,7 @@ fn main() -> Result<()> {
             if let event::Event::Key(k) = event::read()? {
                 match k {
                     event::KeyEvent {
-                        code: KeyCode::Char(c),
+                        code: event::KeyCode::Char(c),
                         ..
                     } => if c.is_ascii_alphabetic() {
                         let c = c.to_lowercase().next().unwrap();
@@ -99,7 +172,7 @@ fn main() -> Result<()> {
                         lit_up = Some(number_to_char(i));
                     },
                     event::KeyEvent {
-                        code: KeyCode::Enter,
+                        code: event::KeyCode::Enter,
                         ..
                     } => {
                         rotors = Rotor::default_rotors();

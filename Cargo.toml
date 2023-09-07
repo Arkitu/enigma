@@ -8,4 +8,12 @@ edition = "2021"
 [dependencies]
 crossterm = "*"
 anyhow = "*"
-tauri = "*"
+bevy = { version="*", features = ["dynamic_linking"] }
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
