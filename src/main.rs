@@ -105,7 +105,7 @@ fn spawn_letter(
         transform: Transform::from_translation(Vec3::new(x, y, 0.)),
         ..default()
     }, Text2dBundle {
-        text: Text::from_section(c, 
+        text: Text::from_section(c,
             TextStyle { 
                 font: asset_server.load("fonts/Arial.ttf"),
                 font_size: 60.,
