@@ -1,7 +1,7 @@
 use std::{io::stdout, time::Duration, collections::VecDeque};
 use crossterm::{terminal, cursor, execute, event, style::Stylize};
 use anyhow::Result;
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 
 struct CleanUp;
 impl Drop for CleanUp {
@@ -76,14 +76,65 @@ struct Rotors([Rotor; 3]);
 #[derive(Resource)]
 struct CharLitUp(Option<char>);
 
+#[derive(Component)]
+struct Char(char);
+
 fn main() {
     let rotors = Rotor::default_rotors();
     App::new()
         .insert_resource(Rotors(rotors))
         .insert_resource(CharLitUp(None))
         .add_plugins(DefaultPlugins)
+        .add_systems(Startup, setup)
         .add_systems(Update, (keyboard_input, light_up_char))
         .run()
+}
+
+fn spawn_letter(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
+    asset_server: &Res<AssetServer>,
+    x: f32,
+    y: f32,
+    c: char
+) {
+    commands.spawn((MaterialMesh2dBundle {
+        mesh: meshes.add(shape::Circle::new(30.).into()).into(),
+        material: materials.add(ColorMaterial::from(Color::DARK_GRAY)),
+        transform: Transform::from_translation(Vec3::new(x, y, 0.)),
+        ..default()
+    }, Text2dBundle {
+        text: Text::from_section(c, 
+            TextStyle { 
+                font: asset_server.load("fonts/Arial.ttf"),
+                font_size: 60.,
+                color: Color::WHITE
+            }),
+        ..default()
+    }, Char(c)));
+}
+
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>
+) {
+    commands.spawn(Camera2dBundle::default());
+
+    for x in 0..9 {
+        println!("({}, {})", ((x as f32)*70.)-280., 0.);
+        spawn_letter(&mut commands, &mut meshes, &mut materials, &asset_server, ((x as f32)*80.)-280., 80., 'a');
+    }
+    for x in 0..8 {
+        println!("({}, {})", ((x as f32)*70.)-280., 0.);
+        spawn_letter(&mut commands, &mut meshes, &mut materials, &asset_server, ((x as f32)*80.)-240., 0., 'a');
+    }
+    for x in 0..9 {
+        println!("({}, {})", ((x as f32)*70.)-280., 0.);
+        spawn_letter(&mut commands, &mut meshes, &mut materials, &asset_server, ((x as f32)*80.)-280., -80., 'a');
+    }
 }
 
 fn keyboard_input(keys: Res<Input<KeyCode>>, mut rotors: ResMut<Rotors>, mut lit_up: ResMut<CharLitUp>) {
@@ -115,6 +166,11 @@ fn keyboard_input(keys: Res<Input<KeyCode>>, mut rotors: ResMut<Rotors>, mut lit
             KeyCode::X => 'x',
             KeyCode::Y => 'y',
             KeyCode::Z => 'z',
+            KeyCode::Return => {
+                rotors.0 = Rotor::default_rotors();
+                lit_up.0 = None;
+                continue
+            },
             _ => continue
         };
         if c.is_ascii_alphabetic() {
