@@ -72,7 +72,7 @@ fn main() -> Result<()> {
     terminal::enable_raw_mode()?;
     execute!(stdout(), cursor::Hide)?;
     let mut lit_up: Option<char> = None;
-    let mut rotors = Rotor::default_rotors()
+    let mut rotors = Rotor::default_rotors();
     loop {
         let mut text = format!("
             A Z E R T Y U I O P\r
