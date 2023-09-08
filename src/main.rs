@@ -99,20 +99,26 @@ fn spawn_letter(
     y: f32,
     c: char
 ) {
-    commands.spawn((MaterialMesh2dBundle {
-        mesh: meshes.add(shape::Circle::new(30.).into()).into(),
-        material: materials.add(ColorMaterial::from(Color::DARK_GRAY)),
-        transform: Transform::from_translation(Vec3::new(x, y, 0.)),
-        ..default()
-    }, Text2dBundle {
-        text: Text::from_section(c,
-            TextStyle { 
-                font: asset_server.load("fonts/Arial.ttf"),
-                font_size: 60.,
-                color: Color::WHITE
-            }),
-        ..default()
-    }, Char(c)));
+    commands.spawn((
+        SpatialBundle::default(),
+        Char(c)
+    )).with_children(|parent| {
+        parent.spawn((MaterialMesh2dBundle {
+            mesh: meshes.add(shape::Circle::new(30.).into()).into(),
+            material: materials.add(ColorMaterial::from(Color::DARK_GRAY)),
+            transform: Transform::from_translation(Vec3::new(x, y, 0.)),
+            ..default()
+        });
+        parent.spawn(Text2dBundle {
+            text: Text::from_section(c,
+                TextStyle { 
+                    font: asset_server.load("fonts/Arial.ttf"),
+                    font_size: 60.,
+                    color: Color::WHITE
+                }),
+            ..default()
+        });
+    });
 }
 
 fn setup(
