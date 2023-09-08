@@ -93,28 +93,30 @@ fn main() {
 fn spawn_letter(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    material: Handle<ColorMaterial>,
     asset_server: &Res<AssetServer>,
     x: f32,
     y: f32,
     c: char
 ) {
     commands.spawn((
-        SpatialBundle::default(),
+        SpatialBundle {
+            transform: Transform::from_xyz(x, y, 0.),
+            ..default()
+        },
         Char(c)
     )).with_children(|parent| {
-        parent.spawn((MaterialMesh2dBundle {
+        parent.spawn(MaterialMesh2dBundle {
             mesh: meshes.add(shape::Circle::new(30.).into()).into(),
-            material: materials.add(ColorMaterial::from(Color::DARK_GRAY)),
-            transform: Transform::from_translation(Vec3::new(x, y, 0.)),
+            material,
             ..default()
         });
         parent.spawn(Text2dBundle {
             text: Text::from_section(c,
                 TextStyle { 
-                    font: asset_server.load("fonts/Arial.ttf"),
-                    font_size: 60.,
-                    color: Color::WHITE
+                    font: asset_server.load("fonts/Call of Ops Duty.otf"),
+                    font_size: 40.,
+                    color: Color::GRAY
                 }),
             ..default()
         });
@@ -129,17 +131,19 @@ fn setup(
 ) {
     commands.spawn(Camera2dBundle::default());
 
-    for x in 0..9 {
-        println!("({}, {})", ((x as f32)*70.)-280., 0.);
-        spawn_letter(&mut commands, &mut meshes, &mut materials, &asset_server, ((x as f32)*80.)-280., 80., 'a');
+    let material = materials.add(ColorMaterial::from(Color::BLACK));
+
+    for (i, c) in "QWERTZUIO".chars().enumerate() {
+        println!("({}, {})", ((i as f32)*70.)-280., 0.);
+        spawn_letter(&mut commands, &mut meshes, material.clone(), &asset_server, ((i as f32)*100.)-400., 100., c);
     }
-    for x in 0..8 {
-        println!("({}, {})", ((x as f32)*70.)-280., 0.);
-        spawn_letter(&mut commands, &mut meshes, &mut materials, &asset_server, ((x as f32)*80.)-240., 0., 'a');
+    for (i, c) in "ASDFGHJK".chars().enumerate() {
+        println!("({}, {})", ((i as f32)*70.)-280., 0.);
+        spawn_letter(&mut commands, &mut meshes, material.clone(), &asset_server, ((i as f32)*100.)-350., 0., c);
     }
-    for x in 0..9 {
-        println!("({}, {})", ((x as f32)*70.)-280., 0.);
-        spawn_letter(&mut commands, &mut meshes, &mut materials, &asset_server, ((x as f32)*80.)-280., -80., 'a');
+    for (i, c) in "PYXCVBNML".chars().enumerate() {
+        println!("({}, {})", ((i as f32)*70.)-280., 0.);
+        spawn_letter(&mut commands, &mut meshes, material.clone(), &asset_server, ((i as f32)*100.)-400., -100., c);
     }
 }
 
@@ -196,9 +200,27 @@ fn keyboard_input(keys: Res<Input<KeyCode>>, mut rotors: ResMut<Rotors>, mut lit
     }
 }
 
-fn light_up_char(lit_up: Res<CharLitUp>) {
+fn light_up_char(lit_up: Res<CharLitUp>, q_chars: Query<(&Char, &Children)>, mut q_child: Query<&mut Handle<ColorMaterial>>, mut materials: ResMut<Assets<ColorMaterial>>,) {
     if let Some(c) = lit_up.0 {
-        println!("{}", c);
+        let c = c.to_uppercase().next().unwrap();
+        for (parent, children) in q_chars.iter() {
+            let material = materials.add(ColorMaterial {
+                color: if parent.0 == c {
+                    Color::YELLOW
+                } else {
+                    Color::BLACK
+                },
+                ..default()
+            });
+            for &child in children.iter() {
+                let mut m = match q_child.get_mut(child) {
+                    Ok(m) => m,
+                    _ => continue
+                };
+                *m = material.to_owned();
+            }
+
+        }
     }
 }
 
