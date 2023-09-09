@@ -1,6 +1,5 @@
-use std::{io::stdout, time::Duration, collections::VecDeque};
-use crossterm::{terminal, cursor, execute, event, style::Stylize};
-use anyhow::Result;
+use std::{io::stdout, collections::VecDeque};
+use crossterm::{terminal, cursor, execute};
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 
 struct CleanUp;
@@ -55,7 +54,7 @@ impl Rotor {
         ]
     }
     pub fn rotate(&mut self) {
-        println!("rotate {}", self.max_count);
+        println!("rotate  {}", self.max_count);
         let n = self.matching.pop_back().unwrap();
         self.matching.push_front(n);
     }
