@@ -13,7 +13,8 @@ bevy = { version="*", default-features = false, features=[
     "bevy_text",
     "multi-threaded",
     "zstd",
-    "bevy_winit" # remove this when compiling to x86_64-unknown-linux-gnu
+    "x11",
+    "bevy_winit"
 ] }
 
 # Enable a small amount of optimization in debug mode
