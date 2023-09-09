@@ -1,14 +1,5 @@
-use std::{io::stdout, collections::VecDeque};
-use crossterm::{terminal, cursor, execute};
+use std::collections::VecDeque;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-
-struct CleanUp;
-impl Drop for CleanUp {
-    fn drop(&mut self) {
-        terminal::disable_raw_mode().unwrap();
-        execute!(stdout(), cursor::Show).unwrap();
-    }
-}
 
 fn char_to_number(c: char) -> u8 {
     if !c.is_ascii_alphabetic() {
@@ -204,25 +195,26 @@ fn keyboard_input(keys: Res<Input<KeyCode>>, mut rotors: ResMut<Rotors>, mut lit
 }
 
 fn light_up_char(lit_up: Res<CharLitUp>, q_chars: Query<(&Char, &Children)>, mut q_child: Query<&mut Handle<ColorMaterial>>, mut materials: ResMut<Assets<ColorMaterial>>,) {
-    if let Some(c) = lit_up.0 {
-        let c = c.to_uppercase().next().unwrap();
-        for (parent, children) in q_chars.iter() {
-            let material = materials.add(ColorMaterial {
-                color: if parent.0 == c {
-                    Color::YELLOW
-                } else {
-                    Color::BLACK
-                },
-                ..default()
-            });
-            for &child in children.iter() {
-                let mut m = match q_child.get_mut(child) {
-                    Ok(m) => m,
-                    _ => continue
-                };
-                *m = material.to_owned();
-            }
-
+    let c = match lit_up.0 {
+        Some(c) => c.to_uppercase().next().unwrap(),
+        None => '@' // no letter will be lit up
+    };
+    for (parent, children) in q_chars.iter() {
+        let material = materials.add(ColorMaterial {
+            color: if parent.0 == c {
+                Color::YELLOW
+            } else {
+                Color::BLACK
+            },
+            ..default()
+        });
+        for &child in children.iter() {
+            let mut m = match q_child.get_mut(child) {
+                Ok(m) => m,
+                _ => continue
+            };
+            *m = material.to_owned();
         }
+
     }
 }
