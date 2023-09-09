@@ -15,6 +15,7 @@ fn char_to_number(c: char) -> u8 {
     if !c.is_ascii_alphabetic() {
         panic!("pas une lettre");
     }
+    let c = c.to_lowercase().next().unwrap();
     (c as u8) - 97
 }
 fn chars_to_numbers(string: &str) -> Vec<u8> {
@@ -44,14 +45,17 @@ impl Rotor {
             max_count
         }
     }
-    pub fn default_rotors() -> [Self; 3] {
+    pub fn default_rotors() -> [Self; 4] {
+        // Rotors of Enigma D
         [
-            Rotor::new(&chars_to_numbers("ekmflgdqvzntowyhxuspaibrcj"), 26*26),
-            Rotor::new(&chars_to_numbers("ajdksiruxblhwtmcqgznpyfvoe"), 26),
-            Rotor::new(&chars_to_numbers("bdfhjlcprtxvznyeiwgakmusqo"), 1)
+            Rotor::new(&chars_to_numbers("LPGSZMHAEOQKVXRFYBUTNICJDW"), 26*26), // I
+            Rotor::new(&chars_to_numbers("SLVGBTFXJQOHEWIRZYAMKPCNDU"), 26), // II
+            Rotor::new(&chars_to_numbers("CJGDPSHKTURAWZXFMYNQOBVLIE"), 1), // III
+            Rotor::new(&chars_to_numbers("IMETCGFRAYSQBZXWLHKDVUPOJN"), usize::MAX) // UKW (reflector)
         ]
     }
     pub fn rotate(&mut self) {
+        println!("rotate {}", self.max_count);
         let n = self.matching.pop_back().unwrap();
         self.matching.push_front(n);
     }
@@ -62,7 +66,7 @@ impl Rotor {
             self.matching.iter().position(|&x| x == i).unwrap() as u8
         };
         self.get_count+=1;
-        if self.get_count <= self.max_count {
+        if self.max_count != usize::MAX && self.get_count == self.max_count*2 {
             self.get_count = 0;
             self.rotate();
         }
@@ -71,7 +75,7 @@ impl Rotor {
 }
 
 #[derive(Resource)]
-struct Rotors([Rotor; 3]);
+struct Rotors([Rotor; 4]);
 
 #[derive(Resource)]
 struct CharLitUp(Option<char>);
@@ -186,16 +190,16 @@ fn keyboard_input(keys: Res<Input<KeyCode>>, mut rotors: ResMut<Rotors>, mut lit
         if c.is_ascii_alphabetic() {
             let rotors = &mut rotors.0;
             let c = c.to_lowercase().next().unwrap();
-            let mut i = char_to_number(c);
-            for rotor in rotors.iter_mut() {
-                println!("{}", i);
-                i = rotor.get(i, false);
+            let mut x = char_to_number(c);
+            for (i, rotor) in rotors.iter_mut().enumerate() {
+                x = rotor.get(x, false);
+                println!("rotor {}: {}", i, number_to_char(x));
             }
-            for rotor in rotors.iter_mut() {
-                println!("{}", i);
-                i = rotor.get(i, true);
+            for (i, rotor) in rotors[..3].iter_mut().enumerate().rev() {
+                x = rotor.get(x, true);
+                println!("rotor {}: {}", i, number_to_char(x));
             }
-            lit_up.0 = Some(number_to_char(i));
+            lit_up.0 = Some(number_to_char(x));
         }
     }
 }
@@ -221,61 +225,5 @@ fn light_up_char(lit_up: Res<CharLitUp>, q_chars: Query<(&Char, &Children)>, mut
             }
 
         }
-    }
-}
-
-fn main_old() -> Result<()> {
-    let _clean_up = CleanUp;
-    terminal::enable_raw_mode()?;
-    execute!(stdout(), cursor::Hide)?;
-    let mut lit_up: Option<char> = None;
-    let mut rotors = Rotor::default_rotors();
-    loop {
-        let mut text = format!("
-            A Z E R T Y U I O P\r
-            Q S D F G H J K L M\r
-                W X C V B N");
-        
-        if event::poll(Duration::from_millis(1000))? {
-            if let event::Event::Key(k) = event::read()? {
-                match k {
-                    event::KeyEvent {
-                        code: event::KeyCode::Char(c),
-                        ..
-                    } => if c.is_ascii_alphabetic() {
-                        let c = c.to_lowercase().next().unwrap();
-                        let mut i = char_to_number(c);
-                        for rotor in rotors.iter_mut() {
-                            println!("{}", i);
-                            i = rotor.get(i, false);
-                        }
-                        for rotor in rotors.iter_mut() {
-                            println!("{}", i);
-                            i = rotor.get(i, true);
-                        }
-                        lit_up = Some(number_to_char(i));
-                    },
-                    event::KeyEvent {
-                        code: event::KeyCode::Enter,
-                        ..
-                    } => {
-                        rotors = Rotor::default_rotors();
-                    },
-                    _ => {}
-                }
-            }
-        }
-
-
-        if let Some(c) = lit_up {
-            let c = c.to_uppercase().next().unwrap();
-            if let Some(splited) = text.split_once(c) {
-                text = splited.0.to_string() + &c.black().on_dark_yellow().to_string() + splited.1;
-            }
-        }
-
-        execute!(stdout(), cursor::MoveTo(0, 0))?;
-        execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
-        println!("{}", text);
     }
 }
